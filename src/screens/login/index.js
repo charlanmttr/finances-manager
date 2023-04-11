@@ -1,40 +1,17 @@
 import * as S from './styles'
 import DefaultButton from '../../components/button';
 import { useForm } from 'react-hook-form';
-import { useEffect } from 'react';
-import financesApi from '../../utils/api';
-import { getObjectFromStorage, getStringFromStorage, storeData } from '../../utils/storage';
+import { useContext, useEffect } from 'react';
+import { AuthContext } from '../../context/authentication';
 
 export default function Login({ navigation }) {
     const { register, setValue, handleSubmit } = useForm();
+    const { handleLogin } = useContext(AuthContext);
 
     useEffect(() => {
         register('email');
         register('password');
     }, [register])
-
-    const handleLogin = async (data) => {
-        try {
-            const body = {
-                email: data.email,
-                password: data.password
-            }
-
-            const response = await financesApi.post('/authenticate', body, {
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-
-            const userInfos = response.data
-            await storeData('@user_info', userInfos)
-            await storeData('@user_info_id', userInfos.id)
-
-            navigation.navigate('Drawer')
-        } catch (error) {
-            console.log(error)
-        }
-    }
 
     return (
         <S.Container>

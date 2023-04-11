@@ -1,71 +1,29 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer } from '@react-navigation/native';
-import { useEffect, useState } from 'react';
-import { getStringFromStorage } from './../utils/storage'
+import { useContext, useEffect, useState } from 'react';
 
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { createDrawerNavigator } from '@react-navigation/drawer';
-
-import Home from '../screens/home';
-import Login from '../screens/login';
-import CreateAccount from '../screens/createAccount';
-import AddCategories from '../screens/createAccount/addCategories';
+import { AuthContext } from '../context/authentication';
 import LoadingScreen from '../screens/loadingScreen';
-
-const Stack = createNativeStackNavigator();
-const Drawer = createDrawerNavigator();
+import AuthRoutes from './AuthRoutes';
+import SignInRoutes from './SignInRoutes';
 
 export default function Router() {
-  const [userId, setUserId] = useState(null)
-  const [isLoading, setLoading] = useState(true)
+  const { userInfo, loading } = useContext(AuthContext);
 
-  useEffect(() => {
-    const getUserData = async () => {
-      const storedID = await getStringFromStorage('@user_info_id');
-      setUserId(storedID);
-      setLoading(false)
-    };
-
-    getUserData();
-  }, [])
-
-  function DrawerRoutes() {
-    return (
-      <Drawer.Navigator>
-        <Drawer.Screen name="Home" component={Home} />
-      </Drawer.Navigator>
+  if(loading){
+    return(
+      <LoadingScreen />
     )
-  }
-
-  function AuthRoutes() {
-    return (
-      <Stack.Navigator>
-        <Stack.Screen name="Drawer" component={DrawerRoutes} options={{ headerShown: false }} />
-      </Stack.Navigator>
-    )
-  }
-
-  function SignInRoutes() {
-    return (
-      <Stack.Navigator>
-        <Stack.Screen name="Login" component={Login} options={{ headerShown: false }} />
-        <Stack.Screen name="CreateAccount" component={CreateAccount} />
-        <Stack.Screen name="AddCategories" component={AddCategories} />
-      </Stack.Navigator>
-    )
-  }
-
-  if (isLoading) {
-    return <LoadingScreen />
-  } else {
+  }else {
     return (
       <NavigationContainer>
         {
-          (userId !== null)
+          userInfo
             ? <AuthRoutes />
             : <SignInRoutes />
         }
       </NavigationContainer>
-    );
+  );
   }
 
 
