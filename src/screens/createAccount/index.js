@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form'
 import * as S from './styles'
 import DefaultButton from '../../components/button';
@@ -6,50 +6,56 @@ import DefaultButton from '../../components/button';
 import Toast from 'react-native-toast-message';
 
 import financesApi from '../../utils/api';
-import { storeData } from '../../utils/storage';
 
 export default function CreateAccount({ navigation }) {
   const [errorMessage, setErrorMessage] = useState(null);
-  const { register, setValue, handleSubmit } = useForm();
+  const { register, setValue, handleSubmit } = useForm({
+    defaultValues: {
+      name: '',
+      email: '',
+      password: ''
+    }
+  });
 
   const registerUser = async (data) => {
     try {
-      const body = {
-        name: data.name,
-        email: data.email,
-        password: data.password
-      }
+      const { name, email, password } = data
 
-      const result = await financesApi.post('/users', body, {
+      if ([name, email, password].includes("")) throw new Error("Preencha todos os campos.")
+
+      const result = await financesApi.post('/users', data, {
         headers: {
           'Content-Type': 'application/json'
         }
       })
 
-      const userInfos = result.data
+      const { id } = result.data
 
-      await storeData('@user_info', userInfos);
-      await storeData('@user_info_id', userInfos.id);
-
-      navigation.navigate('AddCategories', { userId: userInfos.id });
+      navigation.navigate('AddCategories', { user: {
+          "id": id,
+          "name": name,
+          "email": email
+        }});
     } catch (error) {
-      const message = error.response.data.error;
-
-      setErrorMessage(`Ops! Ocorreu algum erro. Info: ${message}`);
+      if(error.response){
+        setErrorMessage(error.response.data.error)
+      }else {
+        setErrorMessage(error.message)
+      }
     }
   }
 
   useEffect(() => {
     if (errorMessage) {
-        Toast.show({
-            type: 'error',
-            text1: errorMessage,
-            visibilityTime: 3000,
-            autoHide: true,
-            onHide: setErrorMessage(null)
-        })
+      Toast.show({
+        type: 'error',
+        text1: errorMessage,
+        visibilityTime: 3000,
+        autoHide: true,
+        onHide: setErrorMessage(null)
+      })
     }
-}, [errorMessage])
+  }, [errorMessage])
 
   useEffect(() => {
     register('name');

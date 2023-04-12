@@ -22,6 +22,15 @@ const AuthProvider = ({ children }) => {
         setAuthInProgress(false)
     }
 
+    const saveUserOnStorage = async (data) => {
+        setUserInfo(data)
+
+        await AsyncStorage.setItem(
+            '@financesapp_userInfo',
+            JSON.stringify(data)
+        )
+    }
+
     const setTemporaryError = (message) => {
         setLoginErrorMessage(message)
         setTimeout(() => setLoginErrorMessage(null), 3000)
@@ -32,7 +41,7 @@ const AuthProvider = ({ children }) => {
         try {
             const { email, password } = data
 
-            if ([email, password].includes(undefined || "")) throw new Error("REQ_FIELDS_MISSING")
+            if ([email, password].includes("")) throw new Error("REQ_FIELDS_MISSING")
 
             const response = await financesApi.post('/authenticate', { email, password }, {
                 headers: {
@@ -40,12 +49,7 @@ const AuthProvider = ({ children }) => {
                 }
             })
 
-            await AsyncStorage.setItem(
-                '@financesapp_userInfo',
-                JSON.stringify(response.data)
-            )
-
-            setUserInfo(response.data)
+            saveUserOnStorage(response.data)
             setWaitingLogin(false);
         } catch (error) {
             if (error.response) {
@@ -72,6 +76,7 @@ const AuthProvider = ({ children }) => {
         <AuthContext.Provider value={{
             handleLogin,
             handleLogout,
+            saveUserOnStorage,
             userInfo,
             authInProgress,
             loginErrorMessage,

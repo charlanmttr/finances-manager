@@ -4,6 +4,7 @@ export const Container = styled.View`
   background-color: #FFF;
   flex: 1;
   align-items: center;
+  justify-content:center;
 `
 
 export const Form = styled.View`

@@ -1,13 +1,20 @@
-import { useState } from 'react';
+import React, { useContext, useState } from 'react';
+
+import Toast from 'react-native-toast-message';
 import DefaultButton from '../../../components/button';
+import { AuthContext } from '../../../context/authentication';
 import financesApi from '../../../utils/api';
+
 import * as S from './styles'
 
 export default function AddCategories({ route, navigation }) {
-    const { userId } = route.params;
+    const { user } = route.params;
 
     const [selectedExpenses, setSelectedExpense] = useState([]);
     const [selectedEntry, setSelectedEntry] = useState([]);
+    const [isFirstClick, setFirstClick] = useState(true)
+    const [isLoading, setLoading] = useState(false)
+    const { saveUserOnStorage } = useContext(AuthContext);
 
     const expenseCategory = [
         'Despesas fixas',
@@ -21,36 +28,74 @@ export default function AddCategories({ route, navigation }) {
         'Extras'
     ]
 
-    const saveCategories = async (selectedExpenses, selectedEntry) => {
-        try {
-            const expenses = selectedExpenses.map(category => ({
-                name: category,
-                isSpent: true,
-            }))
-    
-            const entries = selectedEntry.map(category => ({
-                name: category,
-                isSpent: false,
-            }))
-    
-            const categories = [...expenses, ...entries]
+    const showToast = (type, text1, autoHide, visibilityTime, options = {}) => {
+        Toast.show({
+            type,
+            text1,
+            autoHide,
+            visibilityTime,
+            ...options,
+        });
+    }
 
-            const body = {
-                userId,
-                categories
+    const handleRegister = async () => {
+        try {
+            setLoading(true)
+
+            if (selectedExpenses.length !== 0 || selectedEntry.length !== 0) {
+                await addCategories()
+
+                const waitTime = 2000;
+
+                showToast('success', 'Categorias cadastradas com sucesso!', true, waitTime, {
+                    onHide: transitionMethod(waitTime)
+                })
+            } else if (isFirstClick) {
+                showToast('info', 'Deseja continuar?', true, 4000, {
+                    text2: 'Adicionar categorias agora facilitará no uso do app depois.',
+                })
+
+                setFirstClick(false)
+                setLoading(false)
+                return
+            } else {
+                transitionMethod(1000);
             }
-            
-            const result = await financesApi.post('/createAccount/categories', body, {
-              headers: {
+        } catch (error) {
+            console.log(error)
+
+            showToast('error', 'Ops! Ocorreu algum erro. Tente novamente', true, 4000)
+        }
+    }
+
+    const transitionMethod = (ms) => {
+        setInterval(() => {
+            saveUserOnStorage(user)
+            setLoading(false)
+        }, ms);
+    }
+
+    const addCategories = async () => {
+        const expenses = selectedExpenses.map(category => ({
+            name: category,
+            isSpent: true,
+        }))
+
+        const entries = selectedEntry.map(category => ({
+            name: category,
+            isSpent: false,
+        }))
+
+        const categories = [...expenses, ...entries]
+
+        return await financesApi.post('/createAccount/categories', {
+            userId: user.id,
+            categories
+        }, {
+            headers: {
                 'Content-Type': 'application/json'
-              }
-            })
-      
-            // navigation.navigate('AddCategories', { userId: userInfos.id });
-          } catch (error) {
-            const message = error.response.data.error;
-            setErrorMessage(message);
-          }
+            }
+        })
     }
 
     const handleCategorySelect = (category, type) => {
@@ -110,10 +155,12 @@ export default function AddCategories({ route, navigation }) {
                     }
                 </S.CategoryArea>
                 <DefaultButton
-                    text={"Salvar"}
-                    handleMethod={() => saveCategories(selectedExpenses, selectedEntry)}
+                    text={"Avançar"}
+                    isWaiting={isLoading}
+                    handleMethod={() => handleRegister(selectedExpenses, selectedEntry)}
                 />
             </S.Form>
+            <Toast position='bottom' />
         </S.Container>
     );
 }

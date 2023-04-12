@@ -7,7 +7,12 @@ import { AuthContext } from '../../context/authentication';
 import Toast from 'react-native-toast-message';
 
 export default function Login({ navigation }) {
-    const { register, setValue, handleSubmit } = useForm();
+    const { register, setValue, handleSubmit } = useForm({
+        defaultValues: {
+            email: '',
+            password: ''
+        }
+    });
     const { handleLogin, loginErrorMessage, isWaitingLogin } = useContext(AuthContext);
 
     useEffect(() => {
@@ -57,7 +62,7 @@ export default function Login({ navigation }) {
                     handleMethod={handleSubmit(handleLogin)}
                 />
             </S.Form>
-            <Toast position='bottom' />
+            <Toast position='bottom'  />
         </S.Container>
     );
 }
