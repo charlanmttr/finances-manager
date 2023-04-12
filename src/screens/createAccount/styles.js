@@ -30,17 +30,3 @@ export const TextArea = styled.TextInput`
   margin-bottom: 8px;
   color: #009999;
 `
-
-export const ErrorArea = styled.View`
-  width: 100%;
-  border: 1px;
-  border-color: #f44336;
-  background-color: #fab3ae;
-  border-radius: 8px;
-  padding: 8px;
-`
-
-export const ErrorLabel = styled.Text`
-  color: #f44336;
-  font-size: 15px;
-`

@@ -6,7 +6,9 @@ const AuthContext = createContext()
 
 const AuthProvider = ({ children }) => {
     const [userInfo, setUserInfo] = useState(null)
-    const [loading, setLoadig] = useState(true)
+    const [authInProgress, setAuthInProgress] = useState(true)
+    const [loginErrorMessage, setLoginErrorMessage] = useState(null)
+    const [isWaitingLogin, setWaitingLogin] = useState(false)
 
     useEffect(() => {
         loadUserFromStorage()
@@ -17,45 +19,64 @@ const AuthProvider = ({ children }) => {
         if (data) {
             setUserInfo(JSON.parse(data))
         }
-        setLoadig(false)
+        setAuthInProgress(false)
+    }
+
+    const setTemporaryError = (message) => {
+        setLoginErrorMessage(message)
+        setTimeout(() => setLoginErrorMessage(null), 3000)
     }
 
     const handleLogin = async (data) => {
+        setWaitingLogin(true)
         try {
-            setLoadig(true)
-            const body = {
-                email: data.email,
-                password: data.password
-            }
+            const { email, password } = data
 
-            const response = await financesApi.post('/authenticate', body, {
+            if ([email, password].includes(undefined || "")) throw new Error("REQ_FIELDS_MISSING")
+
+            const response = await financesApi.post('/authenticate', { email, password }, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
             })
-
-            setUserInfo(response.data)
 
             await AsyncStorage.setItem(
                 '@financesapp_userInfo',
                 JSON.stringify(response.data)
             )
 
-            setLoadig(false)
+            setUserInfo(response.data)
+            setWaitingLogin(false);
         } catch (error) {
-            console.log(error)
-            
-            setLoadig(false)
+            if (error.response) {
+                if (error.response.status === 400) {
+                    /* receive httpcode 400: invalid user or password */
+                    setTemporaryError('Usuário ou senha inválida. Tente novamente.')
+                }
+            } else if (error.message === 'REQ_FIELDS_MISSING') {
+                setTemporaryError("Preencha todos os campos.")
+            } else {
+                setTemporaryError('Ops! Houve algo de errado.')
+            }
+
+            setWaitingLogin(false);
         }
     }
 
-    const handleLogout = async () => {        
+    const handleLogout = async () => {
         await AsyncStorage.removeItem('@financesapp_userInfo')
         setUserInfo(null)
     }
 
     return (
-        <AuthContext.Provider value={{ handleLogin, handleLogout, userInfo, loading }}>
+        <AuthContext.Provider value={{
+            handleLogin,
+            handleLogout,
+            userInfo,
+            authInProgress,
+            loginErrorMessage,
+            isWaitingLogin
+        }}>
             {children}
         </AuthContext.Provider>
     )

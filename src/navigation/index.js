@@ -8,9 +8,9 @@ import AuthRoutes from './AuthRoutes';
 import SignInRoutes from './SignInRoutes';
 
 export default function Router() {
-  const { userInfo, loading } = useContext(AuthContext);
+  const { userInfo, authInProgress } = useContext(AuthContext);
 
-  if(loading){
+  if(authInProgress){
     return(
       <LoadingScreen />
     )
